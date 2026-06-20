@@ -146,8 +146,15 @@ function computeTeam(matches, stageReached) {
     else if (m.goalsFor === m.goalsAgainst) { pts += 1; result += 1; }
     pts += m.goalsFor;
   }
-  const idx = STAGE_ORDER.indexOf(stageReached);
-  for (let i = 0; i <= idx; i++) { pts += BONUS[STAGE_ORDER[i]]; bonus += BONUS[STAGE_ORDER[i]]; }
+  // Cumulative stage bonuses. IMPORTANT: a team sitting at "group" has only
+  // PLAYED group games, not qualified — so it earns NO bonus yet. The group
+  // qualification bonus (3) is only banked once the team reaches the last 16
+  // or beyond. Because bonuses are cumulative, reaching last16 re-includes
+  // that group 3, so we simply skip all bonuses while stage is still "group".
+  if (stageReached && stageReached !== "group") {
+    const idx = STAGE_ORDER.indexOf(stageReached);
+    for (let i = 0; i <= idx; i++) { pts += BONUS[STAGE_ORDER[i]]; bonus += BONUS[STAGE_ORDER[i]]; }
+  }
   return { pts, result, goals, bonus, gd };
 }
 
