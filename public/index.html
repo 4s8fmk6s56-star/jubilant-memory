@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>World Cup 2026 — Family Sweepstake</title>
+<title>World Cup 2026 — Sweepstake</title>
 <style>
   :root {
     --gold: #E8B73A;
@@ -35,6 +35,273 @@
   .msg { font-size: 13px; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; line-height: 1.5; }
   .error { background: rgba(180,40,40,.2); border: 1px solid rgba(220,80,80,.5); color: #ffd0d0; }
   .hint { background: rgba(255,255,255,.04); color: rgba(244,234,208,.7); }
+  .warn { background: rgba(232,183,58,.12); border: 1px solid rgba(232,183,58,.45); color: var(--gold); }
+  .updated { font-size: 11px; color: rgba(244,234,208,.5); text-align: right; margin-bottom: 10px; }
+  ol { list-style: none; padding: 0; margin: 0; }
+  li { margin-bottom: 8px; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); }
+  li.podium { background: linear-gradient(100deg, rgba(232,183,58,.18), rgba(255,255,255,.04)); border-color: rgba(232,183,58,.5); }
+  .rowhead { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: none; border: none; color: var(--cream); cursor: pointer; text-align: left; flex: unset; border-radius: 0; }
+  .rank { width: 26px; text-align: center; font-weight: 900; font-size: 17px; color: rgba(244,234,208,.55); flex-shrink: 0; }
+  .rank.top { color: var(--gold); }
+  .name { font-weight: 700; font-size: 15px; min-width: 78px; flex-shrink: 0; }
+  .flags { flex: 1; font-size: 15px; letter-spacing: 1px; overflow: hidden; }
+  .total { font-weight: 900; font-size: 19px; color: var(--gold); min-width: 36px; text-align: right; }
+  .gd { font-size: 11px; color: rgba(244,234,208,.5); min-width: 30px; text-align: right; }
+  .chev { color: rgba(244,234,208,.4); font-size: 12px; width: 14px; }
+  .breakdown { padding: 4px 14px 12px 50px; border-top: 1px solid rgba(255,255,255,.06); }
+  .brow { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; color: rgba(244,234,208,.8); }
+  .bteam { flex: 1; }
+  .bdetail { font-size: 11px; color: rgba(244,234,208,.5); }
+  .bpts { font-weight: 800; color: var(--gold); min-width: 28px; text-align: right; }
+  footer { margin-top: 18px; text-align: center; font-size: 11px; color: rgba(244,234,208,.45); line-height: 1.6; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="frame">
+  <header>
+    <div class="eyebrow">FIFA World Cup 2026 · World Cup Sweepstake</div>
+    <h1>The Standings</h1>
+    <div class="sub">€440 pot · 22 entries · 1st €250 / 2nd €120 / 3rd €50</div>
+  </header>
+
+  <div class="controls">
+    <button id="refresh">Update scores</button>
+  </div>
+
+  <div id="messages"></div>
+  <div id="updated" class="updated"></div>
+  <ol id="board"></ol>
+
+  <footer>
+    Win 3 · Draw 1 · Goal 1 · KO bonuses cumulative (3/5/10/15/20/30) · shootout = draw
+  </footer>
+</div>
+
+<script>
+// ── COMPETITION DATA ────────────────────────────────────────
+const ENTRIES = [
+  { n:1, name:"Amy", teams:["France","Switzerland","Scotland","Saudi Arabia"] },
+  { n:2, name:"Caroline", teams:["Belgium","Croatia","Ghana","New Zealand"] },
+  { n:3, name:"Conor", teams:["Brazil","Senegal","Australia","Panama"] },
+  { n:4, name:"Dave Mac", teams:["Spain","Uruguay","Scotland","Jordan"] },
+  { n:5, name:"Davy", teams:["Germany","Turkey","Egypt","Haiti"] },
+  { n:6, name:"Eoghan", teams:["Spain","USA","Czechia","South Africa"] },
+  { n:7, name:"Greg", teams:["Argentina","Sweden","Bosnia","South Africa"] },
+  { n:8, name:"Helen", teams:["Spain","Mexico","Tunisia","Uzbekistan"] },
+  { n:9, name:"Isabel", teams:["Brazil","Croatia","Ghana","South Africa"] },
+  { n:10, name:"Jack", teams:["France","Japan","Bosnia","New Zealand"] },
+  { n:11, name:"Juliette", teams:["Brazil","Japan","Scotland","South Africa"] },
+  { n:12, name:"Leanne", teams:["Portugal","Sweden","Bosnia","Qatar"] },
+  { n:13, name:"Louie", teams:["Spain","Japan","South Korea","Uzbekistan"] },
+  { n:14, name:"Maurice", teams:["Belgium","USA","Egypt","South Africa"] },
+  { n:15, name:"Mike", teams:["France","Mexico","Scotland","Iran"] },
+  { n:16, name:"Osian", teams:["Netherlands","USA","Scotland","South Africa"] },
+  { n:17, name:"Paul", teams:["Spain","Uruguay","Paraguay","Uzbekistan"] },
+  { n:18, name:"Richie", teams:["Spain","USA","Ivory Coast","Uzbekistan"] },
+  { n:19, name:"Rob", teams:["Brazil","Uruguay","South Korea","DR Congo"] },
+  { n:20, name:"Rory", teams:["France","USA","Ghana","New Zealand"] },
+  { n:21, name:"Zeyneb", teams:["France","USA","Scotland","DR Congo"] },
+  { n:22, name:"Katie", teams:["France","Croatia","Australia","DR Congo"] },
+];
+
+const FLAGS = {
+  France:"🇫🇷",Switzerland:"🇨🇭",Scotland:"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Saudi Arabia":"🇸🇦",Belgium:"🇧🇪",
+  Croatia:"🇭🇷",Ghana:"🇬🇭","New Zealand":"🇳🇿",Brazil:"🇧🇷",Senegal:"🇸🇳",Australia:"🇦🇺",
+  Panama:"🇵🇦",Spain:"🇪🇸",Uruguay:"🇺🇾",Jordan:"🇯🇴",Germany:"🇩🇪",Turkey:"🇹🇷",Egypt:"🇪🇬",
+  Haiti:"🇭🇹",USA:"🇺🇸",Czechia:"🇨🇿","South Africa":"🇿🇦",Argentina:"🇦🇷",Sweden:"🇸🇪",
+  Bosnia:"🇧🇦",Mexico:"🇲🇽",Tunisia:"🇹🇳",Uzbekistan:"🇺🇿",Japan:"🇯🇵",Portugal:"🇵🇹",
+  Qatar:"🇶🇦","South Korea":"🇰🇷",Netherlands:"🇳🇱",Paraguay:"🇵🇾","Ivory Coast":"🇨🇮",
+  Iran:"🇮🇷","DR Congo":"🇨🇩",
+};
+
+// Aliases: display name -> possible football-data.org strings.
+// Verified risk cases (FIFA uses "Korea Republic" not "South Korea", etc).
+// The diagnostic panel will surface anything still unmatched against live data.
+const ALIASES = {
+  USA: ["United States","USA"],
+  "South Korea": ["South Korea","Korea Republic","Republic of Korea"],
+  Czechia: ["Czechia","Czech Republic"],
+  "Ivory Coast": ["Ivory Coast","Côte d'Ivoire","Cote d'Ivoire"],
+  "DR Congo": ["DR Congo","Congo DR","Democratic Republic of the Congo","DR Congo"],
+  Turkey: ["Turkey","Türkiye","Turkiye"],
+  Bosnia: ["Bosnia","Bosnia and Herzegovina","Bosnia-Herzegovina"],
+};
+
+// ── SCORING ─────────────────────────────────────────────────
+const BONUS = { group:3, last16:5, qf:10, sf:15, final:20, winner:30 };
+const STAGE_ORDER = ["group","last16","qf","sf","final","winner"];
+// football-data.org v4 stage strings -> our keys
+const STAGE_MAP = {
+  GROUP_STAGE:"group", ROUND_OF_16:"last16", QUARTER_FINALS:"qf",
+  SEMI_FINALS:"sf", FINAL:"final",
+};
+
+function computeTeam(matches, stageReached) {
+  let pts = 0, result = 0, goals = 0, bonus = 0, gd = 0;
+  for (const m of matches) {
+    goals += m.goalsFor;
+    gd += m.goalsFor - m.goalsAgainst;
+    if (m.knockout && m.decidedByPens) { pts += 1; result += 1; }
+    else if (m.goalsFor > m.goalsAgainst) { pts += 3; result += 3; }
+    else if (m.goalsFor === m.goalsAgainst) { pts += 1; result += 1; }
+    pts += m.goalsFor;
+  }
+  // Cumulative stage bonuses. IMPORTANT: a team sitting at "group" has only
+  // PLAYED group games, not qualified — so it earns NO bonus yet. The group
+  // qualification bonus (3) is only banked once the team reaches the last 16
+  // or beyond. Because bonuses are cumulative, reaching last16 re-includes
+  // that group 3, so we simply skip all bonuses while stage is still "group".
+  if (stageReached && stageReached !== "group") {
+    const idx = STAGE_ORDER.indexOf(stageReached);
+    for (let i = 0; i <= idx; i++) { pts += BONUS[STAGE_ORDER[i]]; bonus += BONUS[STAGE_ORDER[i]]; }
+  }
+  return { pts, result, goals, bonus, gd };
+}
+
+const ALL_TEAMS = [...new Set(ENTRIES.flatMap(e => e.teams))];
+
+function resolveName(apiName) {
+  if (!apiName) return null;
+  for (const dn of ALL_TEAMS) {
+    if (dn === apiName) return dn;
+    const al = ALIASES[dn] || [dn];
+    if (al.some(a => a.toLowerCase() === apiName.toLowerCase())) return dn;
+  }
+  return null;
+}
+
+function processMatches(apiMatches) {
+  const data = {};
+  for (const t of ALL_TEAMS) data[t] = { matches: [], stageReached: null };
+  const unmatched = new Set();
+
+  for (const m of apiMatches) {
+    if (!["FINISHED","IN_PLAY","PAUSED"].includes(m.status)) continue;
+    const stageKey = STAGE_MAP[m.stage];
+    const ft = m.score?.fullTime || {};
+    const hg = ft.home ?? 0, ag = ft.away ?? 0;
+    const knockout = m.stage !== "GROUP_STAGE";
+    const pens = knockout && m.score?.duration === "PENALTY_SHOOTOUT";
+
+    for (const side of ["home","away"]) {
+      const raw = side === "home" ? m.homeTeam?.name : m.awayTeam?.name;
+      const dn = resolveName(raw);
+      if (!dn) { if (raw) unmatched.add(raw); continue; }
+      const gf = side === "home" ? hg : ag;
+      const ga = side === "home" ? ag : hg;
+      data[dn].matches.push({ goalsFor: gf, goalsAgainst: ga, knockout, decidedByPens: pens });
+      if (stageKey) {
+        const cur = data[dn].stageReached;
+        if (cur === null || STAGE_ORDER.indexOf(stageKey) > STAGE_ORDER.indexOf(cur))
+          data[dn].stageReached = stageKey;
+      }
+    }
+  }
+  return { data, unmatched: [...unmatched] };
+}
+
+function buildLeaderboard(teamData) {
+  const rows = ENTRIES.map(e => {
+    let total = 0, gd = 0;
+    const breakdown = e.teams.map(t => {
+      const td = teamData[t];
+      if (!td || td.stageReached === null)
+        return { team: t, pts: 0, result: 0, goals: 0, bonus: 0, gd: 0 };
+      const c = computeTeam(td.matches, td.stageReached);
+      total += c.pts; gd += c.gd;
+      return { team: t, ...c };
+    });
+    return { ...e, total, gd, breakdown };
+  });
+  // Sort: total points, then goal difference, then entry order.
+  rows.sort((a,b) => b.total - a.total || b.gd - a.gd || a.n - b.n);
+  let rank = 0, prev = null, prevGd = null;
+  rows.forEach((r,i) => {
+    if (r.total !== prev || r.gd !== prevGd) { rank = i+1; prev = r.total; prevGd = r.gd; }
+    r.rank = rank;
+  });
+  return rows;
+}
+
+// ── RENDER ──────────────────────────────────────────────────
+let expanded = null;
+
+function render(rows) {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  for (const r of rows) {
+    const podium = r.rank <= 3 && r.total > 0;
+    const li = document.createElement("li");
+    if (podium) li.className = "podium";
+
+    const head = document.createElement("button");
+    head.className = "rowhead";
+    head.onclick = () => { expanded = expanded === r.n ? null : r.n; render(rows); };
+    head.innerHTML = `
+      <span class="rank ${podium ? "top" : ""}">${r.total > 0 ? r.rank : "–"}</span>
+      <span class="name">${r.name}</span>
+      <span class="flags">${r.teams.map(t => `<span title="${t}">${FLAGS[t]||"🏳"}</span>`).join(" ")}</span>
+      <span class="total">${r.total}</span>
+      <span class="gd" title="goal difference (tiebreak)">${r.gd >= 0 ? "+" : ""}${r.gd}</span>
+      <span class="chev">${expanded === r.n ? "▾" : "▸"}</span>`;
+    li.appendChild(head);
+
+    if (expanded === r.n) {
+      const bd = document.createElement("div");
+      bd.className = "breakdown";
+      bd.innerHTML = r.breakdown.map(b => `
+        <div class="brow">
+          <span>${FLAGS[b.team]}</span>
+          <span class="bteam">${b.team}</span>
+          <span class="bdetail">${b.result}r + ${b.goals}g + ${b.bonus}b</span>
+          <span class="bpts">${b.pts}</span>
+        </div>`).join("");
+      li.appendChild(bd);
+    }
+    board.appendChild(li);
+  }
+}
+
+function showMessages(html) { document.getElementById("messages").innerHTML = html; }
+
+async function update() {
+  const btn = document.getElementById("refresh");
+  btn.disabled = true; btn.textContent = "Updating…";
+  showMessages("");
+  try {
+    const res = await fetch("/api/scores");
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
+
+    const { data, unmatched } = processMatches(json.matches || []);
+    render(buildLeaderboard(data));
+
+    document.getElementById("updated").textContent =
+      "Updated " + new Date().toLocaleTimeString() + " · " + new Date().toLocaleDateString();
+
+    if (unmatched.length) {
+      // Silent name-check: logged to the browser console for Rob's setup
+      // verification, but not shown to the group. To view, open the page,
+      // right-click -> Inspect -> Console.
+      console.log("[Name check] Unmatched API team names (scored nothing):", unmatched.join(", "));
+    }
+  } catch (e) {
+    showMessages(`<div class="msg error">${e.message}</div>`);
+  } finally {
+    btn.disabled = false; btn.textContent = "Update scores";
+  }
+}
+
+document.getElementById("refresh").onclick = update;
+// initial paint: everyone on zero
+render(buildLeaderboard(Object.fromEntries(ALL_TEAMS.map(t => [t, { matches: [], stageReached: null }]))));
+showMessages(`<div class="msg hint">Tap <b>Update scores</b> to pull the latest results.
+  Until the tournament kicks off, everyone sits on 0.</div>`);
+update();
+</script>
+</body>
+</html>  .hint { background: rgba(255,255,255,.04); color: rgba(244,234,208,.7); }
   .warn { background: rgba(232,183,58,.12); border: 1px solid rgba(232,183,58,.45); color: var(--gold); }
   .updated { font-size: 11px; color: rgba(244,234,208,.5); text-align: right; margin-bottom: 10px; }
   ol { list-style: none; padding: 0; margin: 0; }
