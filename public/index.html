@@ -315,50 +315,64 @@ function renderGazette(rows) {
   const rnd = rows[Math.floor(Math.random() * rows.length)];
   const rnd2 = rows[Math.floor(Math.random() * rows.length)];
 
-  // Headline bank. {x} placeholders filled below. Mix of warm + savage.
+  // Headline bank. Each entry tags WHO it's about, so we can guarantee
+  // three different people are featured (no picking the same person twice).
   const POOL = [];
+  const add = (who, text) => POOL.push({ who, text });
   // ── Leader headlines ──
-  POOL.push(`<b>${leader.name}</b> sits top of the pile on ${leader.total}. What a champ.`);
-  POOL.push(`Bow down: <b>${leader.name}</b> leads the Gazette table. Insufferable about it, no doubt.`);
-  POOL.push(`<b>${leader.name}</b> tops the standings on ${leader.total}. The rest of you, do better.`);
-  POOL.push(`Sources confirm <b>${leader.name}</b> has already drafted a victory speech. Premature? Probably.`);
-  POOL.push(`<b>${leader.name}</b> leads the way, powered by ${aTeam(leader)}. Nobody saw it coming. Nobody.`);
-  POOL.push(`Gold standard: <b>${leader.name}</b> out in front and showing no mercy.`);
-  if (heldTop) POOL.push(`<b>${leader.name}</b> clings to top spot. The dynasty continues.`);
-  if (heldTop) POOL.push(`Still no.1: <b>${leader.name}</b> refuses to relinquish the throne. Boring, frankly.`);
+  add(leader.name, `<b>${leader.name}</b> sits top of the pile on ${leader.total}. What a champ.`);
+  add(leader.name, `Bow down: <b>${leader.name}</b> leads the Gazette table. Insufferable about it, no doubt.`);
+  add(leader.name, `<b>${leader.name}</b> tops the standings on ${leader.total}. The rest of you, do better.`);
+  add(leader.name, `Sources confirm <b>${leader.name}</b> has already drafted a victory speech. Premature? Probably.`);
+  add(leader.name, `<b>${leader.name}</b> leads the way, powered by ${aTeam(leader)}. Nobody saw it coming. Nobody.`);
+  add(leader.name, `Gold standard: <b>${leader.name}</b> out in front and showing no mercy.`);
+  if (heldTop) add(leader.name, `<b>${leader.name}</b> clings to top spot. The dynasty continues.`);
+  if (heldTop) add(leader.name, `Still no.1: <b>${leader.name}</b> refuses to relinquish the throne. Boring, frankly.`);
   // ── Second place ──
-  if (rows[1]) POOL.push(`<b>${rows[1].name}</b> lurks in second, sharpening the knives. ${leader.name} should sleep lightly.`);
-  if (rows[1]) POOL.push(`So near yet so far: <b>${rows[1].name}</b> stuck in the bridesmaid spot on ${rows[1].total}.`);
+  if (rows[1]) add(rows[1].name, `<b>${rows[1].name}</b> lurks in second, sharpening the knives. ${leader.name} should sleep lightly.`);
+  if (rows[1]) add(rows[1].name, `So near yet so far: <b>${rows[1].name}</b> stuck in the bridesmaid spot on ${rows[1].total}.`);
   // ── Bottom headlines (savage) ──
-  POOL.push(`Rock bottom for <b>${bottom.name}</b> on ${bottom.total}. Grim scenes. Thoughts and prayers.`);
-  POOL.push(`<b>${bottom.name}</b> props up the table. Somebody has to, but did it have to be like this?`);
-  POOL.push(`<b>${bottom.name}</b>'s ${aTeam(bottom)} doing absolutely nothing to ease the pain.`);
-  POOL.push(`Wooden spoon watch: <b>${bottom.name}</b> dead last and sinking. Has anyone checked they're okay?`);
-  POOL.push(`<b>${bottom.name}</b> on ${bottom.total} points. The Gazette has run out of polite things to say.`);
-  POOL.push(`Bottom of the barrel: <b>${bottom.name}</b>. The €420 dream is, mathematically, a nightmare.`);
-  POOL.push(`<b>${bottom.name}</b> reportedly "still confident." We admire the delusion.`);
+  add(bottom.name, `Rock bottom for <b>${bottom.name}</b> on ${bottom.total}. Grim scenes. Thoughts and prayers.`);
+  add(bottom.name, `<b>${bottom.name}</b> props up the table. Somebody has to, but did it have to be like this?`);
+  add(bottom.name, `<b>${bottom.name}</b>'s ${aTeam(bottom)} doing absolutely nothing to ease the pain.`);
+  add(bottom.name, `Wooden spoon watch: <b>${bottom.name}</b> dead last and sinking. Has anyone checked they're okay?`);
+  add(bottom.name, `<b>${bottom.name}</b> on ${bottom.total} points. The Gazette has run out of polite things to say.`);
+  add(bottom.name, `Bottom of the barrel: <b>${bottom.name}</b>. The €420 dream is, mathematically, a nightmare.`);
+  add(bottom.name, `<b>${bottom.name}</b> reportedly "still confident." We admire the delusion.`);
   // ── Movement headlines ──
-  if (biggestClimber) POOL.push(`SURGE: <b>${biggestClimber[0]}</b> rockets ${biggestClimber[1]} place${biggestClimber[1]>1?"s":""} up the table since your last visit. Bandwagon forming.`);
-  if (biggestClimber) POOL.push(`On the up: <b>${biggestClimber[0]}</b> climbs ${biggestClimber[1]} spot${biggestClimber[1]>1?"s":""}. Form is temporary, smugness is forever.`);
-  if (biggestFaller) POOL.push(`FREEFALL: <b>${biggestFaller[0]}</b> tumbles ${Math.abs(biggestFaller[1])} place${Math.abs(biggestFaller[1])>1?"s":""}. The wheels have come off.`);
-  if (biggestFaller) POOL.push(`Ouch: <b>${biggestFaller[0]}</b> slides ${Math.abs(biggestFaller[1])} place${Math.abs(biggestFaller[1])>1?"s":""} down the table. It's not panic yet, but it's close.`);
+  if (biggestClimber) add(biggestClimber[0], `SURGE: <b>${biggestClimber[0]}</b> rockets ${biggestClimber[1]} place${biggestClimber[1]>1?"s":""} up the table since your last visit. Bandwagon forming.`);
+  if (biggestClimber) add(biggestClimber[0], `On the up: <b>${biggestClimber[0]}</b> climbs ${biggestClimber[1]} spot${biggestClimber[1]>1?"s":""}. Form is temporary, smugness is forever.`);
+  if (biggestFaller) add(biggestFaller[0], `FREEFALL: <b>${biggestFaller[0]}</b> tumbles ${Math.abs(biggestFaller[1])} place${Math.abs(biggestFaller[1])>1?"s":""}. The wheels have come off.`);
+  if (biggestFaller) add(biggestFaller[0], `Ouch: <b>${biggestFaller[0]}</b> slides ${Math.abs(biggestFaller[1])} place${Math.abs(biggestFaller[1])>1?"s":""} down the table. It's not panic yet, but it's close.`);
   // ── Mid-table filler (warm) ──
-  POOL.push(`<b>${mid.name}</b> sits mid-table on ${mid.total} — neither hero nor villain. A people's champion.`);
-  POOL.push(`Quietly fancied: <b>${mid.name}</b>'s ${aTeam(mid)} could yet change everything. Or nothing.`);
-  POOL.push(`<b>${mid.name}</b> hovering in the pack, biding their time. Allegedly part of a "master plan."`);
-  POOL.push(`Mid-table mediocrity has a name, and this week it's <b>${mid.name}</b>. No offence.`);
+  add(mid.name, `<b>${mid.name}</b> sits mid-table on ${mid.total} — neither hero nor villain. A people's champion.`);
+  add(mid.name, `Quietly fancied: <b>${mid.name}</b>'s ${aTeam(mid)} could yet change everything. Or nothing.`);
+  add(mid.name, `<b>${mid.name}</b> hovering in the pack, biding their time. Allegedly part of a "master plan."`);
+  add(mid.name, `Mid-table mediocrity has a name, and this week it's <b>${mid.name}</b>. No offence.`);
   // ── Random punter team callouts ──
-  POOL.push(`<b>${rnd.name}</b> pinning hopes on ${aTeam(rnd)}. Bold. Possibly foolish.`);
-  POOL.push(`<b>${rnd.name}</b> still waiting on ${aTeam(rnd)} to turn up. Any day now.`);
-  POOL.push(`Insiders say <b>${rnd.name}</b> "always backed ${aTeam(rnd)}." Revisionism at its finest.`);
-  POOL.push(`<b>${rnd.name}</b> living and dying with every ${aTeam(rnd)} kick. A cautionary tale.`);
-  POOL.push(`Breaking: <b>${rnd2.name}</b> has opinions about the table. The Gazette did not ask for them.`);
+  add(rnd.name, `<b>${rnd.name}</b> pinning hopes on ${aTeam(rnd)}. Bold. Possibly foolish.`);
+  add(rnd.name, `<b>${rnd.name}</b> still waiting on ${aTeam(rnd)} to turn up. Any day now.`);
+  add(rnd.name, `Insiders say <b>${rnd.name}</b> "always backed ${aTeam(rnd)}." Revisionism at its finest.`);
+  add(rnd.name, `<b>${rnd.name}</b> living and dying with every ${aTeam(rnd)} kick. A cautionary tale.`);
+  add(rnd2.name, `Breaking: <b>${rnd2.name}</b> has opinions about the table. The Gazette did not ask for them.`);
 
-  // Pick 3 distinct headlines at random.
+  // Pick 3 headlines about 3 DIFFERENT people.
   const chosen = [];
+  const usedPeople = new Set();
   const bag = [...POOL];
   while (chosen.length < 3 && bag.length) {
-    chosen.push(bag.splice(Math.floor(Math.random() * bag.length), 1)[0]);
+    const pick = bag.splice(Math.floor(Math.random() * bag.length), 1)[0];
+    if (usedPeople.has(pick.who)) continue; // skip if this person already featured
+    usedPeople.add(pick.who);
+    chosen.push(pick.text);
+  }
+  // Fallback: if too few distinct people exist (very early days), top up
+  // with whatever's left so we still show something.
+  if (chosen.length < 3) {
+    const leftovers = POOL.filter(p => !chosen.includes(p.text));
+    while (chosen.length < 3 && leftovers.length) {
+      chosen.push(leftovers.splice(Math.floor(Math.random() * leftovers.length), 1)[0].text);
+    }
   }
 
   const today = new Date().toLocaleDateString(undefined, { weekday:"long", day:"numeric", month:"long" });
@@ -376,7 +390,7 @@ function renderGazette(rows) {
   el.innerHTML = `
     <div class="gz-masthead">
       <div class="gz-title">The Conwon Gazette</div>
-      <div class="gz-sub">Late Edition · ${today} · Price: your dignity</div>
+      <div class="gz-sub">Late Edition · ${today}</div>
     </div>
     ${chosen.map(h => `<div class="gz-headline">${h}</div>`).join("")}`;
 }
