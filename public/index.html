@@ -366,7 +366,7 @@ function renderGazette(rows) {
   if (!anyPoints) {
     el.innerHTML = `
       <div class="gz-masthead">
-        <div class="gz-title">The Sweepstake Gazette</div>
+        <div class="gz-title">The Conwon Gazette</div>
         <div class="gz-sub">Late Edition · ${today}</div>
       </div>
       <div class="gz-headline gz-lede">Tournament yet to kick off. Reporters standing by, pens sharpened, knives sharper. Check back once the goals start flowing.</div>`;
@@ -375,7 +375,7 @@ function renderGazette(rows) {
 
   el.innerHTML = `
     <div class="gz-masthead">
-      <div class="gz-title">The Sweepstake Gazette</div>
+      <div class="gz-title">The Conwon Gazette</div>
       <div class="gz-sub">Late Edition · ${today} · Price: your dignity</div>
     </div>
     ${chosen.map(h => `<div class="gz-headline">${h}</div>`).join("")}`;
