@@ -32,11 +32,22 @@
   }
   button:focus-visible { outline: 2px solid var(--cream); outline-offset: 2px; }
   button:disabled { opacity: .6; cursor: default; }
+  button.secondary { background: transparent; color: var(--gold); border: 1px solid rgba(232,183,58,.5); font-weight: 700; }
+  button.secondary:hover { background: rgba(232,183,58,.1); }
   .msg { font-size: 13px; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; line-height: 1.5; }
   .error { background: rgba(180,40,40,.2); border: 1px solid rgba(220,80,80,.5); color: #ffd0d0; }
   .hint { background: rgba(255,255,255,.04); color: rgba(244,234,208,.7); }
   .warn { background: rgba(232,183,58,.12); border: 1px solid rgba(232,183,58,.45); color: var(--gold); }
   .updated { font-size: 11px; color: rgba(244,234,208,.5); text-align: right; margin-bottom: 10px; }
+  /* ── Sweepstake Gazette ── */
+  .gazette { background: #F4EAD0; color: #1a1a1a; border-radius: 10px; padding: 14px 16px 16px; margin-bottom: 14px; box-shadow: 0 4px 18px rgba(0,0,0,.35); border: 2px solid #b89b3a; }
+  .gz-masthead { text-align: center; border-bottom: 3px double #1a1a1a; padding-bottom: 6px; margin-bottom: 10px; }
+  .gz-title { font-family: 'Georgia','Times New Roman',serif; font-weight: 900; font-size: 26px; letter-spacing: .02em; line-height: 1; }
+  .gz-sub { font-family: 'Georgia',serif; font-size: 10px; letter-spacing: .28em; text-transform: uppercase; margin-top: 4px; color: #555; }
+  .gz-headline { font-family: 'Georgia','Times New Roman',serif; font-size: 15px; line-height: 1.4; padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,.12); }
+  .gz-headline:last-child { border-bottom: none; }
+  .gz-headline b { font-weight: 900; }
+  .gz-lede { font-style: italic; color: #444; font-size: 13px; }
   ol { list-style: none; padding: 0; margin: 0; }
   li { margin-bottom: 8px; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); }
   li.podium { background: linear-gradient(100deg, rgba(232,183,58,.18), rgba(255,255,255,.04)); border-color: rgba(232,183,58,.5); }
@@ -68,6 +79,11 @@
   <div class="controls">
     <button id="refresh">Update scores</button>
   </div>
+  <div class="controls">
+    <button id="gazetteToggle" class="secondary">📰 Today's Top Stories</button>
+  </div>
+
+  <div id="gazette" style="display:none;"></div>
 
   <div id="messages"></div>
   <div id="updated" class="updated"></div>
@@ -265,6 +281,106 @@ function render(rows) {
 
 function showMessages(html) { document.getElementById("messages").innerHTML = html; }
 
+// ── THE SWEEPSTAKE GAZETTE ──────────────────────────────────
+// Generates cheeky newspaper headlines from the live standings.
+// Movement is measured against a per-device snapshot in localStorage
+// (so "since your last visit", not a global midnight reset).
+function renderGazette(rows) {
+  // Only run once there are actual points on the board.
+  const anyPoints = rows.some(r => r.total > 0);
+  const el = document.getElementById("gazette");
+
+  // Load previous snapshot (per device) and compute movement.
+  let prev = {};
+  try { prev = JSON.parse(localStorage.getItem("wc_prev_ranks") || "{}"); } catch (e) {}
+  const movement = {}; // name -> places gained (positive = climbed)
+  rows.forEach(r => {
+    if (prev[r.name] != null) movement[r.name] = prev[r.name] - r.rank;
+  });
+  // Save current snapshot for next time.
+  const snap = {};
+  rows.forEach(r => { snap[r.name] = r.rank; });
+  try { localStorage.setItem("wc_prev_ranks", JSON.stringify(snap)); } catch (e) {}
+
+  const leader = rows[0];
+  const bottom = rows[rows.length - 1];
+  const sortedByMove = Object.entries(movement).sort((a,b) => b[1] - a[1]);
+  const biggestClimber = sortedByMove.find(([, m]) => m > 0);
+  const biggestFaller = sortedByMove.reverse().find(([, m]) => m < 0);
+  const heldTop = movement[leader.name] === 0 || prev[leader.name] === 1;
+
+  // pick a random team from a person for colour
+  const aTeam = (r) => r.teams[Math.floor(Math.random() * r.teams.length)];
+  const mid = rows[Math.floor(rows.length / 2)];
+  const rnd = rows[Math.floor(Math.random() * rows.length)];
+  const rnd2 = rows[Math.floor(Math.random() * rows.length)];
+
+  // Headline bank. {x} placeholders filled below. Mix of warm + savage.
+  const POOL = [];
+  // ── Leader headlines ──
+  POOL.push(`<b>${leader.name}</b> sits top of the pile on ${leader.total}. What a champ.`);
+  POOL.push(`Bow down: <b>${leader.name}</b> leads the Gazette table. Insufferable about it, no doubt.`);
+  POOL.push(`<b>${leader.name}</b> tops the standings on ${leader.total}. The rest of you, do better.`);
+  POOL.push(`Sources confirm <b>${leader.name}</b> has already drafted a victory speech. Premature? Probably.`);
+  POOL.push(`<b>${leader.name}</b> leads the way, powered by ${aTeam(leader)}. Nobody saw it coming. Nobody.`);
+  POOL.push(`Gold standard: <b>${leader.name}</b> out in front and showing no mercy.`);
+  if (heldTop) POOL.push(`<b>${leader.name}</b> clings to top spot. The dynasty continues.`);
+  if (heldTop) POOL.push(`Still no.1: <b>${leader.name}</b> refuses to relinquish the throne. Boring, frankly.`);
+  // ── Second place ──
+  if (rows[1]) POOL.push(`<b>${rows[1].name}</b> lurks in second, sharpening the knives. ${leader.name} should sleep lightly.`);
+  if (rows[1]) POOL.push(`So near yet so far: <b>${rows[1].name}</b> stuck in the bridesmaid spot on ${rows[1].total}.`);
+  // ── Bottom headlines (savage) ──
+  POOL.push(`Rock bottom for <b>${bottom.name}</b> on ${bottom.total}. Grim scenes. Thoughts and prayers.`);
+  POOL.push(`<b>${bottom.name}</b> props up the table. Somebody has to, but did it have to be like this?`);
+  POOL.push(`<b>${bottom.name}</b>'s ${aTeam(bottom)} doing absolutely nothing to ease the pain.`);
+  POOL.push(`Wooden spoon watch: <b>${bottom.name}</b> dead last and sinking. Has anyone checked they're okay?`);
+  POOL.push(`<b>${bottom.name}</b> on ${bottom.total} points. The Gazette has run out of polite things to say.`);
+  POOL.push(`Bottom of the barrel: <b>${bottom.name}</b>. The €420 dream is, mathematically, a nightmare.`);
+  POOL.push(`<b>${bottom.name}</b> reportedly "still confident." We admire the delusion.`);
+  // ── Movement headlines ──
+  if (biggestClimber) POOL.push(`SURGE: <b>${biggestClimber[0]}</b> rockets ${biggestClimber[1]} place${biggestClimber[1]>1?"s":""} up the table since your last visit. Bandwagon forming.`);
+  if (biggestClimber) POOL.push(`On the up: <b>${biggestClimber[0]}</b> climbs ${biggestClimber[1]} spot${biggestClimber[1]>1?"s":""}. Form is temporary, smugness is forever.`);
+  if (biggestFaller) POOL.push(`FREEFALL: <b>${biggestFaller[0]}</b> tumbles ${Math.abs(biggestFaller[1])} place${Math.abs(biggestFaller[1])>1?"s":""}. The wheels have come off.`);
+  if (biggestFaller) POOL.push(`Ouch: <b>${biggestFaller[0]}</b> slides ${Math.abs(biggestFaller[1])} place${Math.abs(biggestFaller[1])>1?"s":""} down the table. It's not panic yet, but it's close.`);
+  // ── Mid-table filler (warm) ──
+  POOL.push(`<b>${mid.name}</b> sits mid-table on ${mid.total} — neither hero nor villain. A people's champion.`);
+  POOL.push(`Quietly fancied: <b>${mid.name}</b>'s ${aTeam(mid)} could yet change everything. Or nothing.`);
+  POOL.push(`<b>${mid.name}</b> hovering in the pack, biding their time. Allegedly part of a "master plan."`);
+  POOL.push(`Mid-table mediocrity has a name, and this week it's <b>${mid.name}</b>. No offence.`);
+  // ── Random punter team callouts ──
+  POOL.push(`<b>${rnd.name}</b> pinning hopes on ${aTeam(rnd)}. Bold. Possibly foolish.`);
+  POOL.push(`<b>${rnd.name}</b> still waiting on ${aTeam(rnd)} to turn up. Any day now.`);
+  POOL.push(`Insiders say <b>${rnd.name}</b> "always backed ${aTeam(rnd)}." Revisionism at its finest.`);
+  POOL.push(`<b>${rnd.name}</b> living and dying with every ${aTeam(rnd)} kick. A cautionary tale.`);
+  POOL.push(`Breaking: <b>${rnd2.name}</b> has opinions about the table. The Gazette did not ask for them.`);
+
+  // Pick 3 distinct headlines at random.
+  const chosen = [];
+  const bag = [...POOL];
+  while (chosen.length < 3 && bag.length) {
+    chosen.push(bag.splice(Math.floor(Math.random() * bag.length), 1)[0]);
+  }
+
+  const today = new Date().toLocaleDateString(undefined, { weekday:"long", day:"numeric", month:"long" });
+
+  if (!anyPoints) {
+    el.innerHTML = `
+      <div class="gz-masthead">
+        <div class="gz-title">The Sweepstake Gazette</div>
+        <div class="gz-sub">Late Edition · ${today}</div>
+      </div>
+      <div class="gz-headline gz-lede">Tournament yet to kick off. Reporters standing by, pens sharpened, knives sharper. Check back once the goals start flowing.</div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="gz-masthead">
+      <div class="gz-title">The Sweepstake Gazette</div>
+      <div class="gz-sub">Late Edition · ${today} · Price: your dignity</div>
+    </div>
+    ${chosen.map(h => `<div class="gz-headline">${h}</div>`).join("")}`;
+}
+
 async function update() {
   const btn = document.getElementById("refresh");
   btn.disabled = true; btn.textContent = "Updating…";
@@ -275,7 +391,9 @@ async function update() {
     if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
 
     const { data, unmatched } = processMatches(json.matches || []);
-    render(buildLeaderboard(data));
+    const rows = buildLeaderboard(data);
+    render(rows);
+    renderGazette(rows);
 
     document.getElementById("updated").textContent =
       "Updated " + new Date().toLocaleTimeString() + " · " + new Date().toLocaleDateString();
@@ -294,6 +412,14 @@ async function update() {
 }
 
 document.getElementById("refresh").onclick = update;
+
+// Gazette toggle: hidden by default, reveals on tap. Keeps mobile uncluttered.
+document.getElementById("gazetteToggle").onclick = function () {
+  const g = document.getElementById("gazette");
+  const showing = g.style.display !== "none";
+  g.style.display = showing ? "none" : "block";
+  this.textContent = showing ? "📰 Today's Top Stories" : "📰 Hide Top Stories";
+};
 // initial paint: everyone on zero
 render(buildLeaderboard(Object.fromEntries(ALL_TEAMS.map(t => [t, { matches: [], stageReached: null }]))));
 showMessages(`<div class="msg hint">Tap <b>Update scores</b> to pull the latest results.
