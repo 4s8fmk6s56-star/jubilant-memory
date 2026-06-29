@@ -145,11 +145,16 @@ const ALIASES = {
 };
 
 // ── SCORING ─────────────────────────────────────────────────
-const BONUS = { group:3, last16:5, qf:10, sf:15, final:20, winner:30 };
-const STAGE_ORDER = ["group","last16","qf","sf","final","winner"];
+// 2026 format note: the group winners/runners-up + best thirds advance to a
+// new ROUND OF 32. So "qualify from group" now means reaching the R32 — that's
+// where the 3-pt qualification bonus lands. Winning the R32 tie to reach the
+// actual Round of 16 banks the 5, and so on up. Bonuses are cumulative.
+const BONUS = { r32:3, last16:5, qf:10, sf:15, final:20, winner:30 };
+const STAGE_ORDER = ["group","r32","last16","qf","sf","final","winner"];
 // football-data.org v4 stage strings -> our keys
 const STAGE_MAP = {
-  GROUP_STAGE:"group", ROUND_OF_16:"last16", QUARTER_FINALS:"qf",
+  GROUP_STAGE:"group", LAST_32:"r32", ROUND_OF_32:"r32",
+  ROUND_OF_16:"last16", LAST_16:"last16", QUARTER_FINALS:"qf",
   SEMI_FINALS:"sf", FINAL:"final",
 };
 
@@ -163,14 +168,15 @@ function computeTeam(matches, stageReached) {
     else if (m.goalsFor === m.goalsAgainst) { pts += 1; result += 1; }
     pts += m.goalsFor;
   }
-  // Cumulative stage bonuses. IMPORTANT: a team sitting at "group" has only
-  // PLAYED group games, not qualified — so it earns NO bonus yet. The group
-  // qualification bonus (3) is only banked once the team reaches the last 16
-  // or beyond. Because bonuses are cumulative, reaching last16 re-includes
-  // that group 3, so we simply skip all bonuses while stage is still "group".
+  // Cumulative stage bonuses. A team sitting at "group" has only PLAYED group
+  // games, not qualified — so it earns NO bonus yet. The qualification bonus
+  // (3) lands at "r32" (reaching the Round of 32 = qualifying from the group).
+  // Because bonuses are cumulative, "group" simply has no bonus entry.
   if (stageReached && stageReached !== "group") {
     const idx = STAGE_ORDER.indexOf(stageReached);
-    for (let i = 0; i <= idx; i++) { pts += BONUS[STAGE_ORDER[i]]; bonus += BONUS[STAGE_ORDER[i]]; }
+    for (let i = 0; i <= idx; i++) {
+      if (BONUS[STAGE_ORDER[i]]) { pts += BONUS[STAGE_ORDER[i]]; bonus += BONUS[STAGE_ORDER[i]]; }
+    }
   }
   return { pts, result, goals, bonus, gd };
 }
@@ -355,6 +361,40 @@ function renderGazette(rows) {
   add(rnd.name, `Insiders say <b>${rnd.name}</b> "always backed ${aTeam(rnd)}." Revisionism at its finest.`);
   add(rnd.name, `<b>${rnd.name}</b> living and dying with every ${aTeam(rnd)} kick. A cautionary tale.`);
   add(rnd2.name, `Breaking: <b>${rnd2.name}</b> has opinions about the table. The Gazette did not ask for them.`);
+
+  // ── SASSY batch ──
+  add(leader.name, `<b>${leader.name}</b> at the top and absolutely loving the smell of their own success. Open a window.`);
+  add(leader.name, `Memo to <b>${leader.name}</b>: leading in week one is the football equivalent of peaking at your debs.`);
+  add(bottom.name, `<b>${bottom.name}</b> has entered the chat. The chat has gone very quiet.`);
+  add(bottom.name, `We rang <b>${bottom.name}</b> for comment. They asked us to stop rubbing it in. We will not.`);
+  add(bottom.name, `<b>${bottom.name}</b>: proof that hope is a renewable resource and points are not.`);
+  add(bottom.name, `Scientists baffled: <b>${bottom.name}</b>'s ${aTeam(bottom)} found a new way to disappoint.`);
+  add(mid.name, `<b>${mid.name}</b> doing the bare minimum and calling it a strategy. Iconic, honestly.`);
+  add(mid.name, `<b>${mid.name}</b> is the group chat member who reacts but never replies. Mid-table behaviour.`);
+  add(rnd.name, `<b>${rnd.name}</b> talking a big game for someone whose ${aTeam(rnd)} can't pass a parked car.`);
+  add(rnd.name, `<b>${rnd.name}</b> said this was "their year." The Gazette has noted it for the records.`);
+  add(rnd.name, `Bold of <b>${rnd.name}</b> to celebrate. Bold, and frankly, a little embarrassing.`);
+  add(rnd2.name, `<b>${rnd2.name}</b> still here. Still trying. We respect the commitment if not the results.`);
+  if (rows[1]) add(rows[1].name, `<b>${rows[1].name}</b> doing all the work and getting none of the glory. A second-place state of mind.`);
+  if (biggestFaller) add(biggestFaller[0], `<b>${biggestFaller[0]}</b> sliding down the table with the grace of a shopping trolley.`);
+  if (biggestClimber) add(biggestClimber[0], `<b>${biggestClimber[0]}</b> climbing the table and won't shut up about it. Touch grass.`);
+
+  // ── SURREAL batch ──
+  add(leader.name, `<b>${leader.name}</b> tops the table. Somewhere, a crow nods slowly and understands.`);
+  add(leader.name, `The number one spot belongs to <b>${leader.name}</b>. The number one spot has always belonged to <b>${leader.name}</b>. Do not question the number one spot.`);
+  add(bottom.name, `<b>${bottom.name}</b> sits at the bottom, where the soup is cold and the clocks run backwards.`);
+  add(bottom.name, `Last place is not a position. Last place is a feeling. <b>${bottom.name}</b> knows this now.`);
+  add(bottom.name, `<b>${bottom.name}</b>'s ${aTeam(bottom)} reportedly seen wandering a car park at dawn, asking passers-by for points.`);
+  add(mid.name, `<b>${mid.name}</b> floats in the mid-table fog, neither here nor there, much like a Tuesday.`);
+  add(mid.name, `A goose has been spotted near <b>${mid.name}</b>'s name on the table. The goose offers no comment. The goose never does.`);
+  add(rnd.name, `<b>${rnd.name}</b> dreamt of ${aTeam(rnd)} lifting the trophy. In the dream the trophy was a pineapple. Make of that what you will.`);
+  add(rnd.name, `<b>${rnd.name}</b> and ${aTeam(rnd)}: a love story written in disappearing ink.`);
+  add(rnd.name, `The Gazette consulted the stars about <b>${rnd.name}</b>. The stars said "maybe." The stars are cowards.`);
+  add(rnd2.name, `<b>${rnd2.name}</b> exists in the table, therefore <b>${rnd2.name}</b> exists. Descartes would be furious.`);
+  add(rnd2.name, `Time is a flat circle and so is the football. <b>${rnd2.name}</b> understands neither.`);
+  if (biggestClimber) add(biggestClimber[0], `<b>${biggestClimber[0]}</b> rose through the table like steam off a forgotten cup of tea. Beautiful. Brief. Slightly damp.`);
+  if (biggestFaller) add(biggestFaller[0], `<b>${biggestFaller[0]}</b> fell down the table and kept falling, past the basement, into a quiet place where no points are kept.`);
+  add(leader.name, `BREAKING: the table has achieved sentience and it, too, fears <b>${leader.name}</b>.`);
 
   // Pick 3 headlines about 3 DIFFERENT people.
   const chosen = [];
