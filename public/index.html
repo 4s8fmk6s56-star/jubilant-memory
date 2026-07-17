@@ -81,7 +81,7 @@
     <button id="refresh">Update scores</button>
   </div>
   <div class="controls">
-    <button id="gazetteToggle" class="secondary">📰 The Final Preview</button>
+    <button id="gazetteToggle" class="secondary">📰 THE FINAL PREVIEW</button>
   </div>
 
   <div id="gazette" style="display:none;"></div>
@@ -500,7 +500,7 @@ document.getElementById("gazetteToggle").onclick = function () {
   const g = document.getElementById("gazette");
   const showing = g.style.display !== "none";
   g.style.display = showing ? "none" : "block";
-  this.textContent = showing ? "📰 The Final Preview" : "📰 Hide Preview";
+  this.textContent = showing ? "📰 THE FINAL PREVIEW" : "📰 HIDE PREVIEW";
 };
 // initial paint: everyone on zero
 render(buildLeaderboard(Object.fromEntries(ALL_TEAMS.map(t => [t, { matches: [], stageReached: null }]))));
