@@ -81,7 +81,7 @@
     <button id="refresh">Update scores</button>
   </div>
   <div class="controls">
-    <button id="gazetteToggle" class="secondary">📰 Today's Top Stories</button>
+    <button id="gazetteToggle" class="secondary">📰 The Final Preview</button>
   </div>
 
   <div id="gazette" style="display:none;"></div>
@@ -98,7 +98,7 @@
 <script>
 // ── COMPETITION DATA ────────────────────────────────────────
 const ENTRIES = [
-  { n:1, name:"Amy", teams:["France","Switzerland","Scotland","Saudi Arabia"] },
+  { n:1, name:"Amy", teams:["Argentina","Switzerland","Scotland","Saudi Arabia"] },
   { n:2, name:"Caroline", teams:["Belgium","Croatia","Ghana","New Zealand"] },
   { n:3, name:"Conor", teams:["Brazil","Senegal","Australia","Panama"] },
   { n:4, name:"Dave Mac", teams:["Spain","Uruguay","Scotland","Jordan"] },
@@ -293,9 +293,36 @@ function showMessages(html) { document.getElementById("messages").innerHTML = ht
 // Movement is measured against a per-device snapshot in localStorage
 // (so "since your last visit", not a global midnight reset).
 function renderGazette(rows) {
+  const el = document.getElementById("gazette");
+
+  // ── FINAL EDITION ──────────────────────────────────────────
+  // Set to true for the World Cup final: shows the hand-written preview
+  // instead of the random headlines. Set back to false to restore the
+  // automatic Gazette afterwards.
+  const FINAL_EDITION = true;
+  if (FINAL_EDITION) {
+    const today = new Date().toLocaleDateString(undefined, { weekday:"long", day:"numeric", month:"long" });
+    const paras = [
+      `<b>It all comes down to this.</b> After a month of glory, heartbreak and interminable WhatsApp notifications (some of you hit the mute button hard on day 1), we arrive at Spain v Argentina.`,
+      `<b>Greg, we owe you an apology.</b> Widely mocked behind the scenes for backing Argentina, he now looks less a fool and more a visionary. Messi, zimmerframe and all, has been unstoppable... so far. One more game to bring home all the spoils, or to share them with Amy after her highly controversial last-minute team switch. Corruption you say? We are told it passed all the transparency checks you'd expect of a FIFA-adjudicated process.`,
+      `<b>Spain, meanwhile, are here on merit and boredom.</b> A team so painful to watch they make drying paint feel like a penalty shootout. Half the sweepstake is pinning their hopes on them, so if they win everyone takes home about €14.`,
+      `<b>Alas, poor France.</b> Many of you thought it was a done deal. Zeyneb had already spent the winnings. Mike, at least, took it like a gentleman. For les Bleus, in the end, it was a case of too many croissants.`,
+      `<b>Honourable mentions:</b> Conor failed to diagnose that his teams were terminal. Davy delivered his finest performance in the WhatsApp group rather than on the pitch. And Jack, fair play for not picking the USA.`,
+      `<b>And at the very bottom, Rob.</b> Dead last, suffering the ignominy of being behind Dave who has never watched a game of football in his life. The architect of this very app, hoisted by his own leaderboard. We're told a consolation prize awaits, but it may just be a wooden spoon.`,
+      `<b>Finally, genuine thanks</b> to Davy and everyone whose commentary in the WhatsApp group made the games worth watching. Enjoy the final. Come on Argentina!`,
+    ];
+    el.innerHTML = `
+      <div class="gz-masthead">
+        <div class="gz-title">The Conwon Gazette</div>
+        <div class="gz-sub">Final Edition · Spain v Argentina · ${today}</div>
+      </div>
+      ${paras.map(p => `<div class="gz-headline">${p}</div>`).join("")}`;
+    return;
+  }
+
+  // ── AUTOMATIC GAZETTE (used outside the final) ──────────────
   // Only run once there are actual points on the board.
   const anyPoints = rows.some(r => r.total > 0);
-  const el = document.getElementById("gazette");
 
   // Load previous snapshot (per device) and compute movement.
   let prev = {};
@@ -473,7 +500,7 @@ document.getElementById("gazetteToggle").onclick = function () {
   const g = document.getElementById("gazette");
   const showing = g.style.display !== "none";
   g.style.display = showing ? "none" : "block";
-  this.textContent = showing ? "📰 Today's Top Stories" : "📰 Hide Top Stories";
+  this.textContent = showing ? "📰 The Final Preview" : "📰 Hide Preview";
 };
 // initial paint: everyone on zero
 render(buildLeaderboard(Object.fromEntries(ALL_TEAMS.map(t => [t, { matches: [], stageReached: null }]))));
