@@ -221,6 +221,25 @@ function processMatches(apiMatches) {
       }
     }
   }
+
+  // ── WINNER BONUS ───────────────────────────────────────────
+  // "Winner" isn't an API stage — FINAL is awarded to both finalists.
+  // So find the finished FINAL and promote the actual winner to "winner",
+  // which banks the 30-pt bonus on top of the cumulative 20 for the final.
+  // score.winner is HOME_TEAM / AWAY_TEAM / DRAW, and is set correctly even
+  // when the tie was decided on penalties (fullTime would be level).
+  for (const m of apiMatches) {
+    if (m.status !== "FINISHED") continue;
+    if (STAGE_MAP[m.stage] !== "final") continue;
+    const w = m.score?.winner;
+    let winnerRaw = null;
+    if (w === "HOME_TEAM") winnerRaw = m.homeTeam?.name;
+    else if (w === "AWAY_TEAM") winnerRaw = m.awayTeam?.name;
+    if (!winnerRaw) continue;
+    const dn = resolveName(winnerRaw);
+    if (dn && data[dn]) data[dn].stageReached = "winner";
+  }
+
   return { data, unmatched: [...unmatched] };
 }
 
